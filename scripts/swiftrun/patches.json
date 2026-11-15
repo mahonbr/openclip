@@ -24,6 +24,12 @@
     "why": "Keep the interpreter run's settings in their own domain instead of swift-frontend's."
   },
   {
+    "file": "Sources/Core/Extensions/ExtensionManager.swift",
+    "find": "        (Bundle.main.object(forInfoDictionaryKey: \"CFBundleShortVersionString\") as? String) ?? \"0.0.0\"",
+    "replace": "        (Bundle.main.object(forInfoDictionaryKey: \"CFBundleShortVersionString\") as? String)\n            ?? ProcessInfo.processInfo.environment[\"OPENCLIP_DEVRUN_VERSION\"] ?? \"0.0.0\"",
+    "why": "No Info.plist means no CFBundleShortVersionString, so every minOpenClipVersion floor would read 0.0.0 and gate the extension."
+  },
+  {
     "file": "Sources/OpenClip/StatusBarController.swift",
     "find": "button.image = NSImage(named: \"MenuBarIcon\") ?? NSImage(systemSymbolName: \"paperclip\", accessibilityDescription: \"OpenClip\")",
     "replace": "button.image = NSImage(systemSymbolName: \"character.cursor.ibeam\", accessibilityDescription: \"OpenClip\")?.withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)) ?? NSImage(systemSymbolName: \"paperclip\", accessibilityDescription: \"OpenClip\")",

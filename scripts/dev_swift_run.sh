@@ -17,6 +17,12 @@ PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SCRATCH="$PROJECT_DIR/.swiftrun"
 cd "$PROJECT_DIR"
 
+# The interpreter process has no Info.plist, so the app cannot read its version from
+# CFBundleShortVersionString. Report the project's MARKETING_VERSION instead, which is
+# what extension `minOpenClipVersion` floors are compared against.
+DEV_VERSION="$(grep -m1 'MARKETING_VERSION' "$PROJECT_DIR/project.yml" | sed 's/.*: *"\{0,1\}\([^"]*\)"\{0,1\}/\1/' || true)"
+export OPENCLIP_DEVRUN_VERSION="${OPENCLIP_DEVRUN_VERSION:-${DEV_VERSION:-0.0.0}}"
+
 usage() {
   printf 'Usage: ./scripts/dev_swift_run.sh [--check] [--clean] [--verbose] [--runner-help] [app args...]\n'
   printf '\n'
@@ -122,6 +128,7 @@ fi
 
 printf 'Running OpenClip via swift (no app binary)\n' >&2
 printf '  settings domain: %s\n' "${OPENCLIP_DEVRUN_DEFAULTS:-com.openclip.OpenClip.swiftdev}" >&2
+printf '  app version:     %s\n' "$OPENCLIP_DEVRUN_VERSION" >&2
 printf '  scratch:         %s\n' "$SCRATCH" >&2
 
 exec swift -L "$BIN_DIR" -lOpenClip "$SCRATCH/App.swift" "${APP_ARGS[@]}"

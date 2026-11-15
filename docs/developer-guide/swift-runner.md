@@ -106,6 +106,21 @@ defaults write com.openclip.OpenClip.swiftdev hasCompletedOnboarding -bool true
 
 `--version` reports `unknown`: there is no `Info.plist`, so `Bundle.main` has no version keys.
 
+## App version
+
+Extension `minOpenClipVersion` floors are compared against the running app's
+`CFBundleShortVersionString`, which an interpreter run does not have. `dev_swift_run.sh` therefore
+exports `OPENCLIP_DEVRUN_VERSION` from `project.yml`'s `MARKETING_VERSION`, and the `ExtensionManager`
+patch below reads it, so a dev run behaves like a build of the current source instead of gating every
+extension as "needs OpenClip 0.0.0 or newer". Override it to simulate another release:
+
+```bash
+OPENCLIP_DEVRUN_VERSION=1.9.0 ./scripts/dev_swift_run.sh   # exercise a version gate on purpose
+```
+
+A floor above the current `MARKETING_VERSION` still gates, which is correct: bump the project version
+before authoring against the newer contract.
+
 ## Dev patches
 
 `scripts/swiftrun/patches.json` holds exact-string patches applied to the mirrored copy only; the
@@ -118,6 +133,7 @@ if an anchor disappears, which is the signal to revisit the patch:
 | `AppUpdateManager.swift` | `UpdateNotificationClient.live` builds that notification center eagerly during `AppUpdateManager.shared` initialization. |
 | `ActionResultHandler.swift` | Notification-producing actions should surface an error, not abort. |
 | `SettingsStore.swift` | Route the shared store to the dev suite above. |
+| `ExtensionManager.swift` | No `Info.plist` means no `CFBundleShortVersionString`, so every `minOpenClipVersion` floor would read `0.0.0` and gate the extension. The dev version comes from `OPENCLIP_DEVRUN_VERSION`. |
 | `StatusBarController.swift` | Dev runs have no asset catalog, so the menu bar icon uses the `character.cursor.ibeam` SF Symbol instead of `MenuBarIcon`. |
 
 If a patch stops applying, update `patches.json` against the new source; do not relax the matcher. The
