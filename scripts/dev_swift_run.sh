@@ -56,23 +56,58 @@ fi
 
 python3 "$PROJECT_DIR/scripts/swiftrun/prepare.py" "$PROJECT_DIR" "$SCRATCH"
 
-if [ "$VERBOSE" = true ]; then
-  swift build --package-path "$SCRATCH" -c debug
-else
-  BUILD_LOG="$SCRATCH/build.log"
-  if [ ! -d "$SCRATCH/.build" ]; then
-    printf 'Building the OpenClip dev module (first run resolves packages)...\n' >&2
-  else
-    printf 'Building the OpenClip dev module...\n' >&2
+BUILD_LOG="$SCRATCH/build.log"
+BUILD_SYSTEM_ARGS=()
+
+run_build() {
+  local -a cmd=(swift build --package-path "$SCRATCH" -c debug "${BUILD_SYSTEM_ARGS[@]}")
+  if [ "$VERBOSE" = true ]; then
+    "${cmd[@]}" 2>&1 | tee "$BUILD_LOG"
+    return "${PIPESTATUS[0]}"
   fi
-  if ! swift build --package-path "$SCRATCH" -c debug >"$BUILD_LOG" 2>&1; then
-    printf 'error: swift build failed; last 60 lines of %s:\n' "$BUILD_LOG" >&2
-    tail -n 60 "$BUILD_LOG" >&2
+  "${cmd[@]}" >"$BUILD_LOG" 2>&1
+}
+
+has_actool_probe_failure() {
+  python3 - "$BUILD_LOG" <<'PY'
+from pathlib import Path
+import sys
+
+text = Path(sys.argv[1]).read_text(errors="ignore")
+needles = (
+    "Failed to decode version info for '/Applications/Xcode.app/Contents/Developer/usr/bin/actool'",
+    "A required plugin failed to load.",
+)
+raise SystemExit(0 if all(needle in text for needle in needles) else 1)
+PY
+}
+
+print_build_failure() {
+  printf 'error: swift build failed; last 60 lines of %s:\n' "$BUILD_LOG" >&2
+  tail -n 60 "$BUILD_LOG" >&2
+}
+
+if [ ! -d "$SCRATCH/.build" ]; then
+  printf 'Building the OpenClip dev module (first run resolves packages)...\n' >&2
+else
+  printf 'Building the OpenClip dev module...\n' >&2
+fi
+
+if ! run_build; then
+  if [ ${#BUILD_SYSTEM_ARGS[@]} -eq 0 ] && has_actool_probe_failure; then
+    printf 'warning: swiftbuild hit an actool probe failure; retrying with --build-system native\n' >&2
+    BUILD_SYSTEM_ARGS=(--build-system native)
+    if ! run_build; then
+      print_build_failure
+      exit 1
+    fi
+  else
+    print_build_failure
     exit 1
   fi
 fi
 
-BIN_DIR="$(swift build --package-path "$SCRATCH" -c debug --show-bin-path)"
+BIN_DIR="$(swift build --package-path "$SCRATCH" -c debug "${BUILD_SYSTEM_ARGS[@]}" --show-bin-path)"
 
 if [ "$CHECK" = true ]; then
   # Dylibs carry the executable bit, so test the Mach-O type instead of permissions.
