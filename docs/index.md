@@ -62,6 +62,7 @@ Welcome to the **OpenClip** technical documentation hub. OpenClip is a lightweig
 - [Standalone Snippet Parsing](developer-guide/snippets.md) — Pure header parsing via `OpenClipSnippetParser`.
 - [Integration & Automation API](developer-guide/integration-api.md) — The inbound `openclip://` contract: install and command routes, and what is not yet exposed.
 - [Code Signing, Hardened Runtime & Notarization](developer-guide/signing-and-notarization.md) — Ad-hoc vs Developer ID builds, the entitlements OpenClip grants and refuses, the sign → notarize → staple pipeline, and the checks that gate a release.
+- [Running Through the Swift Interpreter](developer-guide/swift-runner.md) — `dev_swift_run.sh`: a Santa-safe local run with no compiled app binary, and what it trades away.
 
 ### Action Execution Runtimes
 - [AppleScript Runtime](runtimes/applescript.md) — `AppleScriptAction` execution, variable injection, and output handling.

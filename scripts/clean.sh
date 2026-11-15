@@ -11,6 +11,7 @@ rm -rf ~/Library/Developer/Xcode/DerivedData/OpenClip-*
 
 echo "Cleaning local build directory..."
 rm -rf "$PROJECT_DIR/build"
+rm -rf "$PROJECT_DIR/.swiftrun"
 rm -f /tmp/openclip.log
 
 echo "Clean complete."

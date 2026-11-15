@@ -1,0 +1,32 @@
+[
+  {
+    "file": "Sources/OpenClip/AppDelegate.swift",
+    "find": "        UNUserNotificationCenter.current().delegate = self\n",
+    "replace": "        if Bundle.main.bundleIdentifier != nil { UNUserNotificationCenter.current().delegate = self }\n",
+    "why": "UNUserNotificationCenter.current() aborts when the process has no bundle."
+  },
+  {
+    "file": "Sources/OpenClip/Platform/AppUpdateManager.swift",
+    "find": "self.notificationClient = notificationClient ?? (NSClassFromString(\"XCTestCase\") == nil ? .live : .disabled)",
+    "replace": "self.notificationClient = notificationClient ?? ((NSClassFromString(\"XCTestCase\") == nil && Bundle.main.bundleIdentifier != nil) ? .live : .disabled)",
+    "why": "UpdateNotificationClient.live builds a UNUserNotificationCenter eagerly at launch."
+  },
+  {
+    "file": "Sources/OpenClip/Platform/Effects/ActionResultHandler.swift",
+    "find": "    private func postNotification(title: String, body: String) async throws {\n        let center = UNUserNotificationCenter.current()",
+    "replace": "    private func postNotification(title: String, body: String) async throws {\n        guard Bundle.main.bundleIdentifier != nil else {\n            throw NSError(domain: Constants.actionErrorDomain, code: Int(Constants.actionErrorCode),\n                          userInfo: [NSLocalizedDescriptionKey: \"Notifications are unavailable outside an app bundle.\"])\n        }\n        let center = UNUserNotificationCenter.current()",
+    "why": "Notification actions would abort instead of surfacing an error."
+  },
+  {
+    "file": "Sources/Core/Settings/SettingsStore.swift",
+    "find": "    public static let shared = DefaultSettingsStore(backend: UserDefaultsBackend())",
+    "replace": "    public static let shared = DefaultSettingsStore(backend: UserDefaultsBackend(\n        userDefaults: UserDefaults(suiteName: ProcessInfo.processInfo.environment[\"OPENCLIP_DEVRUN_DEFAULTS\"] ?? \"com.openclip.OpenClip.swiftdev\") ?? .standard))",
+    "why": "Keep the interpreter run's settings in their own domain instead of swift-frontend's."
+  },
+  {
+    "file": "Sources/OpenClip/StatusBarController.swift",
+    "find": "button.image = NSImage(named: \"MenuBarIcon\") ?? NSImage(systemSymbolName: \"paperclip\", accessibilityDescription: \"OpenClip\")",
+    "replace": "button.image = NSImage(systemSymbolName: \"character.cursor.ibeam\", accessibilityDescription: \"OpenClip\")?.withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)) ?? NSImage(systemSymbolName: \"paperclip\", accessibilityDescription: \"OpenClip\")",
+    "why": "Dev runs have no asset catalog; use an SF Symbol for the menu bar icon."
+  }
+]

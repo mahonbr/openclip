@@ -4,6 +4,7 @@ docs/superpowers/
 superpowers/
 .superpowers/
 .build/
+.swiftrun/
 .DS_Store
 xcuserdata/
 build/
