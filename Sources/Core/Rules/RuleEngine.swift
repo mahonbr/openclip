@@ -26,6 +26,10 @@ public final class RuleEngine: ObservableObject, Sendable {
     public func loadRules(from url: URL) async {
         let logger = Log.settings
         let loadedRules = await Task.detached { () -> [AppRule]? in
+            guard FileManager.default.fileExists(atPath: url.path) else {
+                logger.debug("No user rules at \(url.lastPathComponent, privacy: .public); using defaults")
+                return nil
+            }
             do {
                 let data = try Data(contentsOf: url)
                 let decoder = JSONDecoder()

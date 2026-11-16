@@ -267,4 +267,51 @@ final class RuleEngineTests: XCTestCase {
         XCTAssertFalse(randomContext.disabled)
         XCTAssertFalse(randomContext.hotkeyOnly)
     }
+
+    @MainActor
+    func testMissingRulesFileIsNotAnError() async {
+        let previousSinks = Log.currentSinks()
+        let sink = RecordingLogSink()
+        Log.addSink(sink)
+        defer { Log.restoreSinks(previousSinks) }
+
+        let missingURL = FileManager.default.temporaryDirectory.appendingPathComponent("rules_missing_\(UUID().uuidString).json")
+        await RuleEngine.shared.loadRules(from: missingURL)
+
+        XCTAssertTrue(RuleEngine.shared.userRules.isEmpty)
+        XCTAssertTrue(sink.levels(category: "settings").allSatisfy { $0 < .warning })
+    }
+
+    @MainActor
+    func testMalformedRulesFileIsLoggedAsError() async throws {
+        let previousSinks = Log.currentSinks()
+        let sink = RecordingLogSink()
+        Log.addSink(sink)
+        defer { Log.restoreSinks(previousSinks) }
+
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("rules_malformed_\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: tempURL) }
+        try Data("{ not json".utf8).write(to: tempURL)
+
+        await RuleEngine.shared.loadRules(from: tempURL)
+
+        XCTAssertTrue(sink.levels(category: "settings").contains(.error))
+    }
+}
+
+private final class RecordingLogSink: LogSink, @unchecked Sendable {
+    private let lock = NSLock()
+    private var records: [(category: String, level: LogLevel)] = []
+
+    func record(date: Date, category: String, level: LogLevel, message: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        records.append((category, level))
+    }
+
+    func levels(category: String) -> [LogLevel] {
+        lock.lock()
+        defer { lock.unlock() }
+        return records.filter { $0.category == category }.map(\.level)
+    }
 }
