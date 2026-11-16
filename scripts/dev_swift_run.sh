@@ -3,7 +3,7 @@
 #
 # `swift` JIT-executes the program inside Apple's signed swift-frontend, so this
 # runner never writes or execs a new unsigned Mach-O. That keeps a local run out
-# of Santa's "unknown binary" path. The fidelity trade-offs are documented in
+# of "unknown binary" path. The fidelity trade-offs are documented in
 # docs/developer-guide/swift-runner.md.
 #
 # The app cannot be flattened into one source file (Core and OpenSelection

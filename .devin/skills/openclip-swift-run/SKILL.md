@@ -1,19 +1,19 @@
 ---
 name: openclip-swift-run
-description: Run or repair OpenClip's Santa-safe Swift interpreter runner
-argument-hint: "[--check] [app args...]"
+description: Run or repair OpenClip's Swift interpreter runner
+argument-hint: '[--check] [app args...]'
 allowed-tools:
-  - read
-  - grep
-  - glob
-  - exec
+    - read
+    - grep
+    - glob
+    - exec
 triggers:
-  - user
-  - model
+    - user
+    - model
 ---
 
 Run or repair the interpreter runner for OpenClip. Use this when the user wants to launch the app
-locally without producing an executable (Santa/EDR constraints), or when `scripts/dev_swift_run.sh`
+locally without producing an executable, or when `scripts/dev_swift_run.sh`
 fails.
 
 Read `docs/developer-guide/swift-runner.md` before changing the runner. Never patch the repository
@@ -33,13 +33,13 @@ mirror from zero; `--verbose` shows the full build log. Warm runs take ~2s.
 
 ## Repair, by failure
 
-| Symptom | Fix |
-| :--- | :--- |
-| `error: patch anchor no longer exists in <file>` | App source moved. Update the exact `find` string in `scripts/swiftrun/patches.json` against the new source, keeping behavior identical. Delete the patch if the guard is no longer needed. Never relax the matcher. |
-| `no such module 'X'` | A direct SPM dependency was added. Add its `(identity, url, product, package)` to `DIRECT_PACKAGES` in `scripts/swiftrun/prepare.py`. |
-| Launch crash: `bundleProxyForCurrentProcess is nil` | A new eager bundle-only API. Add a guarded exact-string patch in `patches.json`, plus a row in the runner doc's patch table. |
-| Extensions gated as "needs OpenClip X or newer" | The run has no `Info.plist`, so the app version comes from `OPENCLIP_DEVRUN_VERSION` (exported by the script from `project.yml`'s `MARKETING_VERSION`, read by the `ExtensionManager` patch). A floor above that version is correct gating, not a runner bug. |
-| Any other build failure | Read `.swiftrun/build.log`, rerun with `--verbose`, try `--clean` for stale state. |
+| Symptom                                             | Fix                                                                                                                                                                                                                                                           |
+| :-------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `error: patch anchor no longer exists in <file>`    | App source moved. Update the exact `find` string in `scripts/swiftrun/patches.json` against the new source, keeping behavior identical. Delete the patch if the guard is no longer needed. Never relax the matcher.                                           |
+| `no such module 'X'`                                | A direct SPM dependency was added. Add its `(identity, url, product, package)` to `DIRECT_PACKAGES` in `scripts/swiftrun/prepare.py`.                                                                                                                         |
+| Launch crash: `bundleProxyForCurrentProcess is nil` | A new eager bundle-only API. Add a guarded exact-string patch in `patches.json`, plus a row in the runner doc's patch table.                                                                                                                                  |
+| Extensions gated as "needs OpenClip X or newer"     | The run has no `Info.plist`, so the app version comes from `OPENCLIP_DEVRUN_VERSION` (exported by the script from `project.yml`'s `MARKETING_VERSION`, read by the `ExtensionManager` patch). A floor above that version is correct gating, not a runner bug. |
+| Any other build failure                             | Read `.swiftrun/build.log`, rerun with `--verbose`, try `--clean` for stale state.                                                                                                                                                                            |
 
 After editing `patches.json`, rerun; a successful run must print no patch errors. Keep the doc's patch
 table in step with the JSON.

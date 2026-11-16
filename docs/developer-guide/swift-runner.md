@@ -3,7 +3,7 @@
 `./scripts/dev_swift_run.sh` launches the app without producing a signed `.app`. It builds the app as a
 dynamic library and hands a tiny entry file to `swift`, which JIT-executes it inside Apple's signed
 `swift-frontend`. The app is never linked into an executable of its own, so a run does not present a new
-unknown binary to Santa (or to any EDR that gates execution by code signature).
+unknown binary (or to any EDR that gates execution by code signature).
 
 ```bash
 ./scripts/dev_swift_run.sh                  # launch the app
@@ -65,20 +65,20 @@ of `LSUIElement`).
 There is no `Info.plist`, so `Bundle.main` has no identifier and several bundle-only APIs are inert.
 Everything below still works; the differences are deliberate and contained.
 
-| Area | Under `swift` |
-| :--- | :--- |
-| Menu bar, popup, actions, extensions | Works. Extensions and trust state are shared with the installed app (`~/.openclip`). |
-| Global hotkeys | Works (Carbon). Quit the installed app first or both compete for the same chords. |
-| Settings | Isolated in `com.openclip.OpenClip.swiftdev` (see below). |
-| Accessibility | Works if the terminal or `swift-frontend` is granted Accessibility. The process shows up as `swift-frontend`. |
-| Notifications | Disabled by a patch; action results that notify report an error instead of aborting the process. |
-| Sparkle updates | Inert: `AppUpdateManager.updatesEnabled` requires the `com.openclip.OpenClip` bundle id. |
-| Login item (`SMAppService`) | Debug behavior: the toggle only records the preference, so no login item is registered for `swift-frontend`. |
-| Localization | English source strings only; `Localizable.xcstrings` is not built. |
-| App icon, action sounds | Generic icon and silence; resources live in `Sources/OpenClip/Resources`, which is excluded. |
-| `openclip://` deep links | Not registered (no `CFBundleURLTypes`). |
-| Apple Events entitlement | Not applied; Automation prompts go through TCC instead. |
-| OCR / screen capture | Prompts for Screen Recording under the `swift-frontend` identity. |
+| Area                                 | Under `swift`                                                                                                 |
+| :----------------------------------- | :------------------------------------------------------------------------------------------------------------ |
+| Menu bar, popup, actions, extensions | Works. Extensions and trust state are shared with the installed app (`~/.openclip`).                          |
+| Global hotkeys                       | Works (Carbon). Quit the installed app first or both compete for the same chords.                             |
+| Settings                             | Isolated in `com.openclip.OpenClip.swiftdev` (see below).                                                     |
+| Accessibility                        | Works if the terminal or `swift-frontend` is granted Accessibility. The process shows up as `swift-frontend`. |
+| Notifications                        | Disabled by a patch; action results that notify report an error instead of aborting the process.              |
+| Sparkle updates                      | Inert: `AppUpdateManager.updatesEnabled` requires the `com.openclip.OpenClip` bundle id.                      |
+| Login item (`SMAppService`)          | Debug behavior: the toggle only records the preference, so no login item is registered for `swift-frontend`.  |
+| Localization                         | English source strings only; `Localizable.xcstrings` is not built.                                            |
+| App icon, action sounds              | Generic icon and silence; resources live in `Sources/OpenClip/Resources`, which is excluded.                  |
+| `openclip://` deep links             | Not registered (no `CFBundleURLTypes`).                                                                       |
+| Apple Events entitlement             | Not applied; Automation prompts go through TCC instead.                                                       |
+| OCR / screen capture                 | Prompts for Screen Recording under the `swift-frontend` identity.                                             |
 
 Logging is unchanged: `os.Logger` plus `~/Library/Logs/OpenClip/openclip.log`, shared with the installed
 app.
@@ -127,20 +127,20 @@ before authoring against the newer contract.
 repository sources are never modified. Each patch must match exactly once, and `prepare.py` fails loudly
 if an anchor disappears, which is the signal to revisit the patch:
 
-| File | Reason |
-| :--- | :--- |
-| `AppDelegate.swift` | `UNUserNotificationCenter.current()` throws `NSInternalInconsistencyException` when `bundleProxyForCurrentProcess` is nil. |
-| `AppUpdateManager.swift` | `UpdateNotificationClient.live` builds that notification center eagerly during `AppUpdateManager.shared` initialization. |
-| `ActionResultHandler.swift` | Notification-producing actions should surface an error, not abort. |
-| `SettingsStore.swift` | Route the shared store to the dev suite above. |
-| `ExtensionManager.swift` | No `Info.plist` means no `CFBundleShortVersionString`, so every `minOpenClipVersion` floor would read `0.0.0` and gate the extension. The dev version comes from `OPENCLIP_DEVRUN_VERSION`. |
-| `StatusBarController.swift` | Dev runs have no asset catalog, so the menu bar icon uses the `character.cursor.ibeam` SF Symbol instead of `MenuBarIcon`. |
+| File                        | Reason                                                                                                                                                                                      |
+| :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AppDelegate.swift`         | `UNUserNotificationCenter.current()` throws `NSInternalInconsistencyException` when `bundleProxyForCurrentProcess` is nil.                                                                  |
+| `AppUpdateManager.swift`    | `UpdateNotificationClient.live` builds that notification center eagerly during `AppUpdateManager.shared` initialization.                                                                    |
+| `ActionResultHandler.swift` | Notification-producing actions should surface an error, not abort.                                                                                                                          |
+| `SettingsStore.swift`       | Route the shared store to the dev suite above.                                                                                                                                              |
+| `ExtensionManager.swift`    | No `Info.plist` means no `CFBundleShortVersionString`, so every `minOpenClipVersion` floor would read `0.0.0` and gate the extension. The dev version comes from `OPENCLIP_DEVRUN_VERSION`. |
+| `StatusBarController.swift` | Dev runs have no asset catalog, so the menu bar icon uses the `character.cursor.ibeam` SF Symbol instead of `MenuBarIcon`.                                                                  |
 
 If a patch stops applying, update `patches.json` against the new source; do not relax the matcher. The
 same repair playbook is available to agents as the project skill `.devin/skills/openclip-swift-run`
 (`/openclip-swift-run`).
 
-## Verifying the Santa-safe property
+## Verifying the build output
 
 The build directory contains libraries and object files, never an executable. `.build/debug` is a
 symlink and dylibs carry the executable bit, so test the Mach-O type rather than permissions:
