@@ -163,7 +163,7 @@ them because updates are disabled.
   `DIRECT_PACKAGES` in `scripts/swiftrun/prepare.py`.
 - **First run hangs on "Fetching …"** — SwiftPM is resolving packages; later runs use the local cache.
 - **Build failure** — the last 60 lines of `.swiftrun/build.log` are printed; use `--verbose` for the full log.
-- **`actool` version probing fails even after `xcodebuild -runFirstLaunch`** — the runner retries automatically with `swift build --build-system native`, which avoids the failing default `swiftbuild` engine on some Xcode toolchains.
+- **`actool` version probing fails even after `xcodebuild -runFirstLaunch`** — the runner retries automatically with `swift build --build-system native`, which avoids the failing default `swiftbuild` engine on some Xcode toolchains. The fallback is remembered in `.swiftrun/native-build-system` (keyed to `swift --version`), so later runs go straight to the native engine until the toolchain changes or you pass `--clean`.
 - **Hotkey does nothing** — the installed OpenClip is probably running and owns the chord; quit it.
 - **Popup opens with no text** — Accessibility is not granted to the terminal/`swift-frontend`, or the
   selection engine declined (see `--dump-logs --category=selection`).

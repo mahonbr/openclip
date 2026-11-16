@@ -65,6 +65,14 @@ python3 "$PROJECT_DIR/scripts/swiftrun/prepare.py" "$PROJECT_DIR" "$SCRATCH"
 BUILD_LOG="$SCRATCH/build.log"
 BUILD_SYSTEM_ARGS=()
 
+# Remember the actool fallback per toolchain so warm runs skip the swiftbuild attempt that is
+# known to fail; a toolchain update or --clean retries swiftbuild.
+NATIVE_MARKER="$SCRATCH/native-build-system"
+TOOLCHAIN_ID="$(swift --version 2>/dev/null | head -n 1)"
+if [ -f "$NATIVE_MARKER" ] && [ "$(cat "$NATIVE_MARKER")" = "$TOOLCHAIN_ID" ]; then
+  BUILD_SYSTEM_ARGS=(--build-system native)
+fi
+
 run_build() {
   local -a cmd=(swift build --package-path "$SCRATCH" -c debug "${BUILD_SYSTEM_ARGS[@]}")
   if [ "$VERBOSE" = true ]; then
@@ -101,19 +109,22 @@ fi
 
 if ! run_build; then
   if [ ${#BUILD_SYSTEM_ARGS[@]} -eq 0 ] && has_actool_probe_failure; then
-    printf 'warning: swiftbuild hit an actool probe failure; retrying with --build-system native\n' >&2
+    printf 'warning: swiftbuild hit an actool probe failure; using --build-system native for this toolchain\n' >&2
     BUILD_SYSTEM_ARGS=(--build-system native)
     if ! run_build; then
       print_build_failure
       exit 1
     fi
+    printf '%s\n' "$TOOLCHAIN_ID" >"$NATIVE_MARKER"
   else
     print_build_failure
     exit 1
   fi
 fi
 
-BIN_DIR="$(swift build --package-path "$SCRATCH" -c debug "${BUILD_SYSTEM_ARGS[@]}" --show-bin-path)"
+# stderr only carries SwiftPM's '--build-system native' deprecation notice here; the build's copy is in build.log.
+BIN_DIR="$(swift build --package-path "$SCRATCH" -c debug "${BUILD_SYSTEM_ARGS[@]}" --show-bin-path 2>/dev/null)" ||
+  { printf 'error: swift build --show-bin-path failed\n' >&2; exit 1; }
 
 if [ "$CHECK" = true ]; then
   # Dylibs carry the executable bit, so test the Mach-O type instead of permissions.
